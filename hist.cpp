@@ -15,7 +15,7 @@ Point getMatchPoint(const Mat& image, const Mat& temp);
 Point getMirrorAxis(const Mat& image, int axis); 
 
 int main(int argc, char** argv) {
-  if(argc != 4){
+  if(argc != 5){
     cout << "argc=" << argc << endl;
     return (-1);
   }
@@ -37,7 +37,8 @@ int main(int argc, char** argv) {
   bowextractor.setVocabulary(vocab);
   Mat desc;
   bowextractor.compute(img3, keys, desc);
-  cout << desc << endl;
+  FileStorage fs2(argv[4],FileStorage::WRITE);
+  fs2 << "hist" << desc;
   return (0);
 }
 
