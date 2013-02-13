@@ -59,7 +59,18 @@ Point getAlign(const Mat& image, const Mat& temp, int axis){
   int w = image.size().width;
   int h = image.size().height;
   int dx,dy;
-  Point p = getMirrorAxis(image, axis);
+  Mat m1 = image.clone();
+  int cx = w/2;
+  int cy = h/2;
+  float cdpi = M_PI/(m1.cols-1);
+  float rdpi = M_PI/(m1.cols-1);
+  m1.convertTo(m1,CV_32FC1);
+  for (int r = 0; r < m1.rows; r++){
+    for (int c = 0; c < m1.cols; c++){
+      m1.at<float>(r,c) = m1.at<float>(r,c)*( cos(rdpi*r-M_PI/2) * cos(cdpi*c-M_PI/2));
+    }
+  }
+  Point p = getMirrorAxis(m1, axis);
   Mat temp2 = temp(Rect(w/4,h/4,w/2,h/2));
   if (axis == HORIZONTAL){
     dx = p.x;

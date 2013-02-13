@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include "extractor.hpp"
+#include <math.h>
 using namespace cv;
 using namespace std;
 using namespace de32f;
@@ -20,17 +21,21 @@ int main(int argc, char** argv) {
     cout << "argc=" << argc << endl;
     return (-1);
   }
+  Mat img1c = imread(argv[1],1); // color image
   Mat img1 = imread(argv[1],0); // color image
   Mat img2 = imread(argv[2],0); // color image
+  Mat imgg1;
   Point p = getAlign(img1, img2, HORIZONTAL);
-  Mat img3 = img1(Rect(p.x-300,p.y-150,600,600));
+  Mat img3 = img1c(Rect(p.x-320,p.y-160,640,640));
+  namedWindow("test");
+  imshow("test",img3);
+  waitKey(20);
   FREAK* freak = new FREAK(false,false);
   DE32F* extractor = new DE32F(Ptr<DescriptorExtractor>(freak));
   Mat desc;
   vector<KeyPoint> keys(0);
   distributedKeyPoints(img3,30,keys);
   extractor->compute(img3, keys, desc);
-  namedWindow("test", CV_WINDOW_AUTOSIZE);
   int rowNum = desc.size().height;
   FileStorage fs(argv[3],FileStorage::WRITE);
   fs << "brief" << desc; 
@@ -54,7 +59,18 @@ Point getAlign(const Mat& image, const Mat& temp, int axis){
   int w = image.size().width;
   int h = image.size().height;
   int dx,dy;
-  Point p = getMirrorAxis(image, axis);
+  Mat m1 = image.clone();
+  int cx = w/2;
+  int cy = h/2;
+  float cdpi = M_PI/(m1.cols-1);
+  float rdpi = M_PI/(m1.cols-1);
+  m1.convertTo(m1,CV_32FC1);
+  for (int r = 0; r < m1.rows; r++){
+    for (int c = 0; c < m1.cols; c++){
+      m1.at<float>(r,c) = m1.at<float>(r,c)*( cos(rdpi*r-M_PI/2) * cos(cdpi*c-M_PI/2));
+    }
+  }
+  Point p = getMirrorAxis(m1, axis);
   Mat temp2 = temp(Rect(w/4,h/4,w/2,h/2));
   if (axis == HORIZONTAL){
     dx = p.x;
