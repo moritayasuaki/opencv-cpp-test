@@ -72,7 +72,7 @@ float str2value(const string& str){
     return 1;
   }
   else {
-    return 0;
+    return -1;
   }
 }
 
@@ -105,13 +105,27 @@ int main(int argc, char** argv) {
   // cout << respons << endl;
   CvTermCriteria criteria;
   CvSVMParams params;
-  criteria = cvTermCriteria(CV_TERMCRIT_EPS, 10000, 1e-6);
-  params = CvSVMParams (CvSVM::C_SVC, CvSVM::RBF, 10.0,8.0,1.0,10.0,0.5,0.1,NULL,criteria);
-  svm.train_auto(train,respons,Mat(),Mat(),params);
+  CvParamGrid cgrid(1.0,10000.0,10);
+  CvParamGrid ggrid(1,20,1.5);
+  criteria = cvTermCriteria(CV_TERMCRIT_EPS, 10000, 1e-8);
+  params = CvSVMParams (CvSVM::C_SVC, CvSVM::RBF, /*degree*/ 0.0, /*gamma*/1.5,/*coef0*/ 0.0,/*C*/1000.0,/*nu*/0.0,/*p*/0.0,NULL,criteria);
+  svm.train_auto(train,respons,Mat(),Mat(),params,8,cgrid,ggrid,get_default);
+  double p = 0;
+  double n = 0;
   for (i = 0; i< ids.size(); i++){
-    cout << ids[i] << ":" << respons.row(i) << endl;
-    cout << ids[i] << ":" << svm.predict(train.row(i)) << endl;
+    if(respons.at<float>(0,i) > 0){
+      if(respons.at<float>(0,i) * svm.predict(train.row(i)) > 0){
+        p += 1.0;
+      }
+    }
+    else{
+      if(respons.at<float>(0,i) * svm.predict(train.row(i)) > 0){
+        n += 1.0;
+      }
+    }
   }
+  cout << svm.
+  cout << "p=" << p/ids.size() << ",n=" << n/ids.size() << endl;
   return (0);
 }
 

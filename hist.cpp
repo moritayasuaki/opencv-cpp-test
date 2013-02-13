@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
   DescriptorMatcher  *matcher = (new BFMatcher(NORM_L2));
 
   vector<KeyPoint> keys(0);
-  distributedKeyPoints(img3,30,keys);
+  distributedKeyPoints(img3,10,keys);
   BOWImgDescriptorExtractor bowextractor(extractor,matcher);
   bowextractor.setVocabulary(vocab);
   Mat desc;
