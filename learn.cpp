@@ -105,27 +105,31 @@ int main(int argc, char** argv) {
   // cout << respons << endl;
   CvTermCriteria criteria;
   CvSVMParams params;
-  CvParamGrid cgrid(1.0,10000.0,10);
-  CvParamGrid ggrid(1,20,1.5);
+  CvParamGrid cgrid(20,30,1.1);
+  CvParamGrid ggrid(2.0,10.0,1.1);
   criteria = cvTermCriteria(CV_TERMCRIT_EPS, 10000, 1e-8);
   params = CvSVMParams (CvSVM::C_SVC, CvSVM::RBF, /*degree*/ 0.0, /*gamma*/1.5,/*coef0*/ 0.0,/*C*/1000.0,/*nu*/0.0,/*p*/0.0,NULL,criteria);
-  svm.train_auto(train,respons,Mat(),Mat(),params,8,cgrid,ggrid,get_default);
-  double p = 0;
-  double n = 0;
+  svm.train_auto(train,respons,Mat(),Mat(),params,5,cgrid,ggrid,CvParamGrid(),CvParamGrid());
+  double positives = 0;
+  double negatives = 0;
+  double pmatch = 0;
+  double nmatch = 0;
   for (i = 0; i< ids.size(); i++){
     if(respons.at<float>(0,i) > 0){
+      positives += 1.0;
       if(respons.at<float>(0,i) * svm.predict(train.row(i)) > 0){
-        p += 1.0;
+        pmatch += 1.0;
       }
     }
     else{
+      negatives += 1.0;
       if(respons.at<float>(0,i) * svm.predict(train.row(i)) > 0){
-        n += 1.0;
+        nmatch += 1.0;
       }
     }
   }
-  cout << svm.
-  cout << "p=" << p/ids.size() << ",n=" << n/ids.size() << endl;
+  svm.save(argv[3],"try1");
+  cout << "p=" << pmatch/positives << ",n=" << nmatch/negatives << ",all=" << (pmatch+nmatch)/ids.size() << " " << positives/ids.size() << endl;
   return (0);
 }
 
