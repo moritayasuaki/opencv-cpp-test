@@ -1,31 +1,46 @@
 #include <cv.h>
 #include <math.h>
 #include "util.hpp"
+
 using namespace cv;
 using namespace std;
 
-Point getCenter(const Mat& image){
-  int
+int mirrorPosition(const Mat& image, int axis){
+  Mat flipped;
+  int w = flipped.size().width;
+  int h = flipped.size().height;
+  Rect r;
+  flip(image, flipped, axis);
+  if (axis == HORIZONTAL) {
+    r = Rect(w/4,0,w/2,h);
+  }
+  else {
+    r = Rect(0,h/4,w,h/2);
+  }
+  flipped = flipped(r);
+  Point max = matchPoint(image,flipped);
+  if (axis == HORIZONTAL){
+    return (max.x/2+w/4+w/8); // return x position for HORIZONTAL
+  }
+  else{
+    return (max.y/2+h/4+h/8); // return y position for VERTICAL
+  }
 }
 
-void setWindow(Mat& mat);
+Point matchPoint(const Mat& image, const Mat& temp){
+  Mat match;
+  Point max;
+  matchTemplate(image,temp,match,CV_TM_CCOEFF);
+  minMaxLoc(match,NULL,NULL,NULL,&max);
+  return max;
+}
 
-void setHanningWindow(Mat& mat){
-  int t = mat.type();
-  CV_Assert(t == CV_32FC1 || t == CV_64FC1);
-  if(t == CV_32FC1){
-    for (int r = 0; r < mat.rows; r++){
-      float* fptr = mat.ptr<float>(r);
-      for (int c = 0; c < mat.cols; c++){
-        
-      }
-    }
-  }
-  else if(t == CV_64FC1){
-    for (int r = 0; r < 
-  }
-} 
-Point getAlign(const Mat& image, const Mat& temp, int axis){
+Point center(const Mat& image){
+  Moments m = moments(image);
+  return Point(m.m10/m.m00,m.m01/m.m00);
+}
+
+Point align(const Mat& image, int axis){
   int w = image.size().width;
   int h = image.size().height;
   int dx,dy;
@@ -35,49 +50,36 @@ Point getAlign(const Mat& image, const Mat& temp, int axis){
   float cdpi = M_PI/(m1.cols-1);
   float rdpi = M_PI/(m1.cols-1);
   m1.convertTo(m1,CV_32FC1);
- Point p = getMirrorAxis(m1, axis);
-  Mat temp2 = temp(Rect(w/4,h/4,w/2,h/2));
-  if (axis == HORIZONTAL){
-    dx = p.x;
-    Mat image2 = image(Rect(dx-w/4,0,w/2,h));
-    Point p2 = getMatchPoint(image2,temp2);
-    dy = p2.y/2 + h/4 + h/8;
-  }
-  else {
-    dy = p.y;
-    Mat image2 = image(Rect(0,dy-h/4,w,h/2));
-    Point p2 = getMatchPoint(image2,temp2);
-    dx = p2.x/2 + w/4 + w/8;
-  }
+  dx = mirrorPosition(m1, axis);
   return Point(dx,dy);
 }
 
-Point getMatchPoint(const Mat& image, const Mat& temp){
-  Mat match;
-  Point max;
-  matchTemplate(image,temp,match,CV_TM_CCOEFF);
-  minMaxLoc(match,NULL,NULL,NULL,&max);
-  return max;
+
+void setWindow(Mat& image, double (*func)(double,double,double), double scale){
+  int t = image.type();
+  int w = image.cols;
+  int h = image.rows;
+  CV_Assert(t == CV_64FC1);
+  for (int y = 0; y < h; y++){
+    float* fptr = image.ptr<float>(y);
+    for (int x = 0; x < w; x++){
+      fptr[x] *= func(x/w,y/h,scale);
+    }
+  }
+}
+void setGaussianWindow(Mat& image){
+  setWindow(image, gaussian, 0.25);
+}
+void setHanningWindow(Mat& image){
+  setWindow(image, hanning, 1);
 }
 
-Point getMirrorAxis(const Mat& image, int axis) {
-  Mat flipped;
-  flip(image, flipped, axis); // flip around Y axis
-  int w = flipped.size().width;
-  int h = flipped.size().height;
-  Rect r;
-  if (axis == HORIZONTAL){
-    r = Rect(w/4,0,w/2,h);
-  }
-  else {
-    r = Rect(0,h/4,w,h/2);
-  }
-  flipped = flipped(r);
-  Point max = getMatchPoint(image,flipped);
-  if (axis == HORIZONTAL){
-    return (Point(max.x/2+w/4+w/8,0));
-  }
-  else{
-    return (Point(0,max.y/2+h/4+h/8));
-  }
+double gaussian(double x, double y,double sigma){
+  double x2 = (x-0.5)*(x-0.5);
+  double y2 = (y-0.5)*(y-0.5);
+  double sigma2 = sigma*sigma;
+  return exp(-(x2+y2)/sigma2);
+}
+double hanning(double x, double y,double scale){
+  return cos(M_PI*(x-0.5))*cos(M_PI*(y-0.5));
 }
