@@ -7,8 +7,8 @@ using namespace std;
 
 int mirrorPosition(const Mat& image, int axis){
   Mat flipped;
-  int w = flipped.size().width;
-  int h = flipped.size().height;
+  int w = image.size().width;
+  int h = image.size().height;
   Rect r;
   flip(image, flipped, axis);
   if (axis == HORIZONTAL) {
@@ -30,7 +30,7 @@ int mirrorPosition(const Mat& image, int axis){
 Point matchPoint(const Mat& image, const Mat& temp){
   Mat match;
   Point max;
-  matchTemplate(image,temp,match,CV_TM_CCOEFF);
+  matchTemplate(image,temp,match,CV_TM_CCOEFF_NORMED);
   minMaxLoc(match,NULL,NULL,NULL,&max);
   return max;
 }
@@ -44,13 +44,9 @@ Point align(const Mat& image, int axis){
   int w = image.size().width;
   int h = image.size().height;
   int dx,dy;
-  Mat m1 = image.clone();
-  int cx = w/2;
-  int cy = h/2;
-  float cdpi = M_PI/(m1.cols-1);
-  float rdpi = M_PI/(m1.cols-1);
-  m1.convertTo(m1,CV_32FC1);
-  dx = mirrorPosition(m1, axis);
+  dx = mirrorPosition(image, axis);
+  Point p = center(image(Rect(dx-200,h/4,400,h/2)));
+  dy = p.y+h/4;
   return Point(dx,dy);
 }
 
@@ -59,16 +55,16 @@ void setWindow(Mat& image, double (*func)(double,double,double), double scale){
   int t = image.type();
   int w = image.cols;
   int h = image.rows;
-  CV_Assert(t == CV_64FC1);
+  CV_Assert(t == CV_32FC1 );
   for (int y = 0; y < h; y++){
     float* fptr = image.ptr<float>(y);
     for (int x = 0; x < w; x++){
-      fptr[x] *= func(x/w,y/h,scale);
+      fptr[x] *= (float)(func((double)x/w,(double)y/h,scale));
     }
   }
 }
 void setGaussianWindow(Mat& image){
-  setWindow(image, gaussian, 0.25);
+  setWindow(image, gaussian, 0.5);
 }
 void setHanningWindow(Mat& image){
   setWindow(image, hanning, 1);
